@@ -1,12 +1,16 @@
-import { Text, View, StyleSheet } from "react-native";
+import { Button, StyleSheet, Text, View } from "react-native";
 
-export default function Index() {
+import { useRouter } from "expo-router";
+
+const Index = () => {
+  const router = useRouter();
   return (
     <View style={styles.container}>
-      <Text>Edit src/app/index.tsx to edit this screen.</Text>
+      <Text>Hello World</Text>
+      <Button title="Hello World" onPress={() => router.push("/login")} />
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -15,3 +19,5 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 });
+
+export default Index;
