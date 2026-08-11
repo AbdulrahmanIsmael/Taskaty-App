@@ -1,23 +1,34 @@
-import { Button, StyleSheet, Text, View } from "react-native";
-
-import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import { Redirect } from "expo-router";
+import { useFirstLaunch } from "@/shared/hooks/useFirstLaunch";
+import { supabase } from "@/services/supabase/client";
+import { User } from "@supabase/supabase-js";
+import { router } from "expo-router";
 
 const Index = () => {
-  const router = useRouter();
-  return (
-    <View style={styles.container}>
-      <Text>Hello World</Text>
-      <Button title="Hello World" onPress={() => router.push("/login")} />
-    </View>
-  );
-};
+  const { loading: firstLaunchLoading, isFirstLaunch } = useFirstLaunch();
+  const [authLoading, setAuthLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) {
+        await supabase.auth.signOut();
+        router.replace("/(auth)/login");
+        return;
+      }
+      setUser(data.user);
+      setAuthLoading(false);
+    };
+
+    checkUser();
+  }, []);
+
+  if (firstLaunchLoading || authLoading) return null;
+  if (isFirstLaunch) return <Redirect href="/onboarding" />;
+
+  return <Redirect href={user ? "/(main)/home" : "/(auth)/login"} />;
+};
 
 export default Index;
