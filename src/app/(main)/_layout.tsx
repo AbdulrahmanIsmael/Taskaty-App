@@ -2,22 +2,10 @@ import { Drawer } from "expo-router/drawer";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../../theme/colors";
 import { CustomDrawerContent } from "../../shared/components/CustomDrawerContent";
-import { supabase } from "@/services/supabase/client";
-import { useEffect, useState } from "react";
-import { UserResponse } from "@supabase/supabase-js";
+import useUser from "@/features/auth/hooks/useUser";
 
 export default function MainLayout() {
-  const [user, setUser] = useState<UserResponse | null>(null);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      const userResponse = await supabase.auth.getUser();
-      if (!userResponse.error) {
-        setUser(userResponse);
-      }
-    };
-    fetchUser();
-  }, []);
+  const { user } = useUser();
 
   return (
     <Drawer
@@ -55,8 +43,8 @@ export default function MainLayout() {
       <Drawer.Screen
         name="profile"
         options={{
-          drawerLabel: user?.data.user?.user_metadata?.full_name || "Profile",
-          title: user?.data.user?.user_metadata?.full_name || "Profile",
+          drawerLabel: user?.user_metadata?.full_name || "Profile",
+          title: user?.user_metadata?.full_name || "Profile",
           drawerItemStyle: { display: "none" },
           drawerIcon: ({ color, size }) => (
             <Ionicons name="person-outline" size={size} color={color} />
@@ -74,14 +62,14 @@ export default function MainLayout() {
           ),
         }}
       />
-      {/* <Drawer.Screen
+      <Drawer.Screen
         name="change-password"
         options={{
           drawerLabel: "Change Password",
           title: "Change Password",
           drawerItemStyle: { display: "none" },
         }}
-      /> */}
+      />
     </Drawer>
   );
 }

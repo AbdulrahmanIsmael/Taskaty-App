@@ -4,24 +4,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { colors } from "../../theme/colors";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useEffect, useState } from "react";
-import { supabase } from "@/services/supabase/client";
-import { User } from "@supabase/supabase-js";
+import useUser from "@/features/auth/hooks/useUser";
 
 export function CustomDrawerContent(props: any) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      if (data.user) {
-        setUser(data.user);
-      }
-    };
-    fetchUser();
-  }, []);
+  const { user } = useUser();
 
   const handleLogout = () => {
     router.replace("/(auth)/login");

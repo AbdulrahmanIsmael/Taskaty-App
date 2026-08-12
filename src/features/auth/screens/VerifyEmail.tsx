@@ -1,4 +1,12 @@
-import { StyleSheet, Text, View, Pressable } from "react-native";
+import {
+  ActivityIndicator,
+  AppState,
+  StyleSheet,
+  Text,
+  View,
+  Pressable,
+} from "react-native";
+import { useEffect, useRef, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
 import { colors } from "@/theme/colors";
@@ -13,6 +21,40 @@ const VerifyEmail = () => {
     password: string;
   }>();
 
+  const [checking, setChecking] = useState(false);
+  const appState = useRef(AppState.currentState);
+
+  useEffect(() => {
+    if (!email || !password) return;
+
+    const trySignIn = async () => {
+      setChecking(true);
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email as string,
+        password: password as string,
+      });
+      setChecking(false);
+
+      if (!error) {
+        showSuccess("Email Verified", "Welcome to Taskaty! 🎉");
+      }
+    };
+
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      const wasBackground =
+        appState.current === "background" || appState.current === "inactive";
+      const isNowActive = nextState === "active";
+
+      if (wasBackground && isNowActive) {
+        trySignIn();
+      }
+
+      appState.current = nextState;
+    });
+
+    return () => subscription.remove();
+  }, [email, password]);
+
   const handleResend = async () => {
     const { error } = await supabase.auth.resend({
       email: email as string,
@@ -22,14 +64,14 @@ const VerifyEmail = () => {
     if (error) {
       showError(
         "Failed To Send Email",
-        error?.message || "Something went wrong. Please try again."
+        error?.message || "Something went wrong. Please try again.",
       );
       return;
     }
 
     showSuccess(
-      "Email Resend",
-      "Check your inbox for the confirmation message"
+      "Email Resent",
+      "Check your inbox for the confirmation message",
     );
   };
 
@@ -39,10 +81,12 @@ const VerifyEmail = () => {
       return;
     }
 
+    setChecking(true);
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+    setChecking(false);
 
     if (error) {
       if (
@@ -51,25 +95,25 @@ const VerifyEmail = () => {
       ) {
         showError(
           "Not Verified Yet",
-          "Please verify your email address via the link sent to your inbox."
+          "Please verify your email address via the link sent to your inbox.",
         );
         return;
       }
 
       showError(
         "Sign In Failed",
-        error.message || "Failed to sign in. Please try again."
+        error.message || "Failed to sign in. Please try again.",
       );
       return;
     }
 
-    showSuccess("Email Verified", "Welcome!");
-    router.replace("/(main)/home");
+    showSuccess("Email Verified", "Welcome to Taskaty! 🎉");
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
+        {/* Icon */}
         <View style={styles.iconContainer}>
           <Feather name="mail" size={64} color={colors.primary} />
         </View>
@@ -77,16 +121,33 @@ const VerifyEmail = () => {
         <Text style={styles.title}>Check your email</Text>
 
         <Text style={styles.description}>
-          We have sent a confirmation message to{"\n"}
+          We sent a confirmation link to{"\n"}
           <Text style={styles.emailText}>{email || "your email address"}</Text>
         </Text>
 
+        {/* Auto-check status badge */}
+        {checking ? (
+          <View style={styles.checkingBadge}>
+            <ActivityIndicator size="small" color={colors.primary} />
+            <Text style={styles.checkingText}>Checking verification…</Text>
+          </View>
+        ) : (
+          <View style={styles.checkingBadge}>
+            <Feather name="zap" size={14} color={colors.primary} />
+            <Text style={styles.checkingText}>
+              We'll sign you in automatically once verified
+            </Text>
+          </View>
+        )}
+
+        {/* Buttons */}
         <View style={styles.buttonContainer}>
           <Pressable
             onPress={handleVerified}
+            disabled={checking}
             style={({ pressed }) => [
               styles.primaryButton,
-              pressed && styles.buttonPressed,
+              (pressed || checking) && styles.buttonPressed,
             ]}
           >
             <Text style={styles.primaryButtonText}>I'm verified</Text>
@@ -94,9 +155,10 @@ const VerifyEmail = () => {
 
           <Pressable
             onPress={handleResend}
+            disabled={checking}
             style={({ pressed }) => [
               styles.secondaryButton,
-              pressed && styles.buttonPressed,
+              (pressed || checking) && styles.buttonPressed,
             ]}
           >
             <Text style={styles.secondaryButtonText}>
@@ -123,7 +185,7 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: 120,
     height: 120,
-    backgroundColor: "rgba(106, 61, 232, 0.1)", // Light primary color
+    backgroundColor: "rgba(106, 61, 232, 0.1)",
     borderRadius: 60,
     alignItems: "center",
     justifyContent: "center",
@@ -141,11 +203,26 @@ const styles = StyleSheet.create({
     color: colors.gray500,
     textAlign: "center",
     lineHeight: 24,
-    marginBottom: 40,
+    marginBottom: 24,
   },
   emailText: {
     fontWeight: "700",
     color: colors.primary,
+  },
+  checkingBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#F3E8FF",
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    marginBottom: 32,
+  },
+  checkingText: {
+    fontSize: 13,
+    color: colors.primary,
+    fontWeight: "600",
   },
   buttonContainer: {
     width: "100%",

@@ -1,39 +1,18 @@
-import {
-  View,
-  Text,
-  StyleSheet,
-  ActivityIndicator,
-  ScrollView,
-  Dimensions,
-} from "react-native";
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Dimensions } from "react-native";
 import { colors } from "../../theme/colors";
-import { useEffect, useState } from "react";
-import { supabase } from "@/services/supabase/client";
-import { User } from "@supabase/supabase-js";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import useCompletedTasks from "@/features/tasks/hooks/useCompletedTasks";
 import { useStreak } from "@/features/tasks/hooks/useStreak";
+import useUser from "@/features/auth/hooks/useUser";
 
 const { width } = Dimensions.get("window");
 
 export default function ProfileScreen() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading } = useUser();
   const insets = useSafeAreaInsets();
   const completedTasks = useCompletedTasks();
   const streak = useStreak();
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      if (data.user) {
-        setUser(data.user);
-      }
-      setLoading(false);
-    };
-    fetchUser();
-  }, []);
 
   if (loading) {
     return (

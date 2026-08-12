@@ -4,8 +4,8 @@ type ToastOptions = Omit<ToastShowParams, "type" | "text1" | "text2">;
 
 export const showSuccess = (
   text1: string,
-  text2?: string,
-  options?: ToastOptions
+  text2?: string | undefined,
+  options?: ToastOptions,
 ) => {
   Toast.show({
     type: "success",
@@ -17,8 +17,8 @@ export const showSuccess = (
 
 export const showError = (
   text1: string,
-  text2?: string,
-  options?: ToastOptions
+  text2?: string | undefined,
+  options?: ToastOptions,
 ) => {
   Toast.show({
     type: "error",
@@ -30,8 +30,8 @@ export const showError = (
 
 export const showWarning = (
   text1: string,
-  text2?: string,
-  options?: ToastOptions
+  text2?: string | undefined,
+  options?: ToastOptions,
 ) => {
   Toast.show({
     type: "info",

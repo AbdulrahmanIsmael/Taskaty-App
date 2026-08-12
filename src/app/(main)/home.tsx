@@ -1,11 +1,11 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useEffect, useState } from "react";
 
 import { Ionicons } from "@expo/vector-icons";
 import { Task } from "../../features/tasks/types";
 import { TaskForm } from "../../features/tasks/components/TaskForm/index";
 import { TaskList } from "../../features/tasks/components/TaskList";
 import { colors } from "../../theme/colors";
-import { useEffect, useState } from "react";
 import { supabase } from "@/services/supabase/client";
 import useUser from "@/features/auth/hooks/useUser";
 
@@ -73,8 +73,6 @@ const Home = () => {
         .insert([{ ...taskData, user_id: userId }])
         .select()
         .single();
-
-      console.log("error; ", error);
 
       if (data) {
         const newTask: Task = {

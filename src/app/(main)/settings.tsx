@@ -1,26 +1,30 @@
-import React, { useState, useEffect } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
+  ActivityIndicator,
+  Alert,
   ScrollView,
+  StyleSheet,
+  Text,
   TextInput,
   TouchableOpacity,
-  Alert,
-  ActivityIndicator,
+  View,
 } from "react-native";
-import { colors } from "../../theme/colors";
+import { router } from "expo-router";
+import { showError, showSuccess } from "@/utils/toast";
+import { useEffect, useState } from "react";
+
 import { Ionicons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { colors } from "../../theme/colors";
 import { supabase } from "@/services/supabase/client";
-import { User } from "@supabase/supabase-js";
-import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useEmailChangeStatus } from "@/features/auth/hooks/useEmailChangeStatus";
+import { useAuth } from "@/features/auth/hooks/useAuth";
+import useUser from "@/features/auth/hooks/useUser";
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { isEmailChangePending, pendingEmail } = useEmailChangeStatus();
+  const { user, userId, loading } = useUser();
+  const { deleteAccount, errorMsg } = useAuth();
 
   // Form states
   const [name, setName] = useState("");
@@ -31,30 +35,39 @@ export default function SettingsScreen() {
   const [isEditingEmail, setIsEditingEmail] = useState(false);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      if (data.user) {
-        setUser(data.user);
-        setName(data.user.user_metadata?.full_name || "");
-        setEmail(data.user.email || "");
-      }
-      setLoading(false);
-    };
-    fetchUser();
-  }, []);
+    if (!user) return;
+    if (!isEditingName) setName(user.user_metadata?.full_name ?? "");
+    if (!isEditingEmail) setEmail(user.email ?? "");
+  }, [user]);
 
   const handleUpdateProfile = async () => {
-    // TODO (Supabase): Update user metadata (full_name)
-    // await supabase.auth.updateUser({ data: { full_name: name } });
-    Alert.alert("Success", "Profile information updated.");
+    await supabase.auth.updateUser({
+      data: { full_name: name },
+    });
+    showSuccess("Profile Name Updated", undefined, {
+      autoHide: true,
+      text1Style: {
+        fontSize: 14,
+        fontWeight: "500",
+      },
+    });
     setIsEditingName(false);
   };
 
   const handleUpdateEmail = async () => {
     if (!email) return;
+
     // TODO (Supabase): Update user email
-    // await supabase.auth.updateUser({ email: email });
-    Alert.alert("Check Email", "Verification link sent to new email.");
+    const { error } = await supabase.auth.updateUser({
+      email: email,
+    });
+
+    if (error) {
+      showError(error.message);
+    } else {
+      showSuccess("Email Updated", "Please verify your email address.");
+    }
+
     setIsEditingEmail(false);
   };
 
@@ -69,8 +82,14 @@ export default function SettingsScreen() {
           style: "destructive",
           onPress: async () => {
             // TODO (Supabase): Delete all tasks for this user
-            // await supabase.from('tasks').delete().eq('user_id', user?.id);
-            Alert.alert("Deleted", "All tasks have been deleted.");
+            await supabase.from("tasks").delete().eq("user_id", userId);
+            showSuccess("Tasks Deleted", undefined, {
+              autoHide: true,
+              text1Style: {
+                fontSize: 14,
+                fontWeight: "500",
+              },
+            });
           },
         },
       ],
@@ -88,9 +107,19 @@ export default function SettingsScreen() {
           style: "destructive",
           onPress: async () => {
             // TODO (Supabase): Delete tasks where date is before today
-            // const today = new Date().toISOString();
-            // await supabase.from('tasks').delete().eq('user_id', user?.id).lt('date', today);
-            Alert.alert("Deleted", "Past tasks have been deleted.");
+            const today = new Date().toISOString();
+            await supabase
+              .from("tasks")
+              .delete()
+              .eq("user_id", userId)
+              .lt("date", today);
+            showSuccess("Past Tasks Deleted", undefined, {
+              autoHide: true,
+              text1Style: {
+                fontSize: 14,
+                fontWeight: "500",
+              },
+            });
           },
         },
       ],
@@ -107,12 +136,13 @@ export default function SettingsScreen() {
           text: "Delete Account",
           style: "destructive",
           onPress: async () => {
-            // TODO (Supabase): Delete user account via Edge Function or direct RPC if configured
-            // await supabase.rpc('delete_user_account');
-            Alert.alert(
-              "Account Deleted",
-              "Your account has been permanently deleted.",
-            );
+            const success = await deleteAccount();
+            if (!success) {
+              showError(
+                "Failed to delete account",
+                errorMsg ?? "Please try again later.",
+              );
+            }
           },
         },
       ],
@@ -239,12 +269,23 @@ export default function SettingsScreen() {
             </View>
           )}
 
+          {isEmailChangePending && (
+            <View style={{ marginTop: 8 }}>
+              <Text style={{ color: colors.primary }}>
+                A confirmation link has been sent to your new email
+              </Text>
+              <Text style={{ fontWeight: "bold", color: colors.primary }}>
+                {pendingEmail}
+              </Text>
+            </View>
+          )}
+
           <View style={styles.divider} />
 
           {/* PASSWORD FIELD (LINK) */}
           <TouchableOpacity
             style={styles.actionRow}
-            // onPress={() => router.push("/(main)/change-password")}
+            onPress={() => router.push("/(main)/change-password")}
           >
             <View style={styles.actionIconWrap}>
               <Ionicons

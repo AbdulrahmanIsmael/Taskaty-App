@@ -27,12 +27,12 @@
     "react-native-worklets": "0.8.3"
   },
   "scripts": {
-    "start": "expo start --tunnel",
-    "start-c": "expo start --tunnel --clear",
-    "start-client": "expo start --dev-client",
-    "android": "expo run:android",
-    "ios": "expo run:ios",
-    "web": "expo start --web"
+    "start": "npx expo start --tunnel",
+    "start-c": "npx expo start --tunnel --clear",
+    "start-client": "npx expo start --dev-client",
+    "android": "npx expo run:android",
+    "ios": "npx expo run:ios",
+    "web": "npx expo start --web"
   },
   "private": true,
   "devDependencies": {

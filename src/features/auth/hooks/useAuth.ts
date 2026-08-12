@@ -82,11 +82,46 @@ export const useAuth = () => {
     }
   };
 
+  const deleteAccount = async (): Promise<boolean> => {
+    try {
+      setLoading(true);
+      setErrorMsg(null);
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const { error } = await supabase.functions.invoke("delete-account", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+      });
+
+      if (error) {
+        setErrorMsg("Failed to delete account. Please try again.");
+        return false;
+      }
+
+      // Clear the local session — the auth listener in _layout.tsx
+      // will redirect to login automatically.
+      await supabase.auth.signOut();
+      return true;
+    } catch (err) {
+      console.log(err);
+      setErrorMsg("Something went wrong. Please try again.");
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     loading,
     errorMsg,
     setErrorMsg,
     signIn,
     signUp,
+    deleteAccount,
   };
 };
