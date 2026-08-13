@@ -17,6 +17,7 @@ const Index = () => {
     const checkUser = async () => {
       try {
         const { data, error } = await supabase.auth.getUser();
+        // if component unmounted, do nothing!
         if (!isMounted) return;
 
         if (error || !data.user) {

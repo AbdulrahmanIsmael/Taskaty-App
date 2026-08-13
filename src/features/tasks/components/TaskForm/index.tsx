@@ -3,6 +3,7 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,7 +11,6 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  Platform,
 } from "react-native";
 import { Priority, Task } from "../../types";
 import { useEffect, useRef, useState } from "react";
@@ -30,7 +30,12 @@ interface TaskFormProps {
   initialData?: Task | null;
 }
 
-export function TaskForm({ visible, onClose, onSubmit, initialData }: TaskFormProps) {
+export function TaskForm({
+  visible,
+  onClose,
+  onSubmit,
+  initialData,
+}: TaskFormProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<Priority>("medium");
@@ -39,35 +44,38 @@ export function TaskForm({ visible, onClose, onSubmit, initialData }: TaskFormPr
 
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const sheetTranslateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  const prevVisible = useRef(false);
 
   // Populate fields if initialData is provided
   useEffect(() => {
-    if (visible) {
+    const justOpened = visible && !prevVisible.current;
+    prevVisible.current = visible;
+
+    if (justOpened) {
       if (initialData) {
         setTitle(initialData.title);
         setDescription(initialData.description || "");
         setPriority(initialData.priority);
-        
+
         if (initialData.date || initialData.time) {
           const d = new Date();
           if (initialData.date) {
-            // Very basic parse assuming localized date string matching toLocaleDateString
-            // Or ideally use a standard format, for now we just try to keep it if we can
-            // If the date parsing from string is tricky, we can skip it or parse roughly.
-            // Assuming Date format MM/DD/YYYY from toLocaleDateString:
             const parsedDate = new Date(initialData.date);
             if (!isNaN(parsedDate.getTime())) {
-              d.setFullYear(parsedDate.getFullYear(), parsedDate.getMonth(), parsedDate.getDate());
+              d.setFullYear(
+                parsedDate.getFullYear(),
+                parsedDate.getMonth(),
+                parsedDate.getDate(),
+              );
             }
           }
           if (initialData.time) {
-            // Parse time roughly (e.g. "10:30 PM")
             const timeMatch = initialData.time.match(/(\d+):(\d+) (AM|PM)/i);
             if (timeMatch) {
               let [_, h, m, ampm] = timeMatch;
               let hours = parseInt(h);
-              if (ampm.toUpperCase() === 'PM' && hours < 12) hours += 12;
-              if (ampm.toUpperCase() === 'AM' && hours === 12) hours = 0;
+              if (ampm.toUpperCase() === "PM" && hours < 12) hours += 12;
+              if (ampm.toUpperCase() === "AM" && hours === 12) hours = 0;
               d.setHours(hours, parseInt(m), 0, 0);
             }
           }
@@ -76,13 +84,14 @@ export function TaskForm({ visible, onClose, onSubmit, initialData }: TaskFormPr
           setDate(undefined);
         }
       } else {
-        // Reset fields for new task
         setTitle("");
         setDescription("");
         setPriority("medium");
         setDate(undefined);
       }
+    }
 
+    if (visible) {
       Animated.timing(backdropOpacity, {
         toValue: 1,
         duration: 300,
@@ -108,7 +117,7 @@ export function TaskForm({ visible, onClose, onSubmit, initialData }: TaskFormPr
         }),
       ]).start();
     }
-  }, [visible, initialData]);
+  }, [visible]);
 
   const handleSubmit = () => {
     if (!title.trim()) return;
@@ -131,7 +140,7 @@ export function TaskForm({ visible, onClose, onSubmit, initialData }: TaskFormPr
       date: formattedDate,
       time: formattedTime,
     });
-    
+
     // onClose handles the reset when modal closes
     onClose();
   };
@@ -167,7 +176,9 @@ export function TaskForm({ visible, onClose, onSubmit, initialData }: TaskFormPr
           <View style={styles.dragHandle} />
 
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>{isEditing ? "Edit Task" : "New Task"}</Text>
+            <Text style={styles.headerTitle}>
+              {isEditing ? "Edit Task" : "New Task"}
+            </Text>
             <TouchableOpacity
               onPress={onClose}
               style={styles.closeButton}
@@ -228,12 +239,18 @@ export function TaskForm({ visible, onClose, onSubmit, initialData }: TaskFormPr
                 activeOpacity={0.85}
               >
                 <Ionicons
-                  name={isEditing ? "checkmark-circle-outline" : "add-circle-outline"}
+                  name={
+                    isEditing
+                      ? "checkmark-circle-outline"
+                      : "add-circle-outline"
+                  }
                   size={20}
                   color={colors.white}
                   style={{ marginRight: 8 }}
                 />
-                <Text style={styles.submitText}>{isEditing ? "Update Task" : "Create Task"}</Text>
+                <Text style={styles.submitText}>
+                  {isEditing ? "Update Task" : "Create Task"}
+                </Text>
               </TouchableOpacity>
             </ScrollView>
           </KeyboardAvoidingView>
