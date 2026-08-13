@@ -32,7 +32,8 @@
     "start-client": "npx expo start --dev-client",
     "android": "npx expo run:android",
     "ios": "npx expo run:ios",
-    "web": "npx expo start --web"
+    "web": "npx expo start --web",
+    "preview": "eas build --platform android --profile preview"
   },
   "private": true,
   "devDependencies": {
